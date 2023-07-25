@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19;
-
+import "hardhat/console.sol";
 contract Wallet {
     
     error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData);
@@ -12,17 +12,16 @@ contract Wallet {
     //////////////////////////////////////////////////////////////////////////*/
     string public url;
 
-    address internal constant ENTRYPOINT = 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789;
+    address internal entry;
     
     /*//////////////////////////////////////////////////////////////////////////
                                     CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
 
-    constructor(string memory _url, address[] memory _owners) {
+    constructor(address _entry, string memory _url, address _owner) {
+        entry = _entry;
         url = _url;
-        for (uint256 i = 0; i < _owners.length; i++) {
-            owner[_owners[i]] = true;
-        }
+        owner[_owner] = true;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -51,10 +50,10 @@ contract Wallet {
     }
 
     function constructDID(bytes calldata response, bytes calldata) external view virtual returns (string memory did) {
-        bytes32 msgHash = bytes32(response[0:32]);
-        bytes memory msgSignature = bytes(response[32:97]);
-        bytes memory didHex = bytes(response[97:]);
-        address signer = _recoverSigner(msgHash, msgSignature);
+        bytes memory msgSignature = bytes(response[0:65]);
+        bytes memory didHex = bytes(response[65:]);
+        bytes32 msgHash2 = keccak256(abi.encodePacked(string(didHex)));
+        address signer = _recoverSigner(msgHash2, msgSignature);
         require(owner[signer], "INVALID SIGNATURE");
         return string(didHex);
     }
@@ -84,7 +83,7 @@ contract Wallet {
     function _isOwnerOrEntryPoint() internal view {
         assembly {
             let owner_ := sload(not(0x8b78c6d8))
-            if iszero(or(eq(caller(), owner_), eq(caller(), ENTRYPOINT))) {
+            if iszero(or(eq(caller(), owner_), eq(caller(), entry.slot))) {
                 mstore(0x00, 0x82b42900) // `Unauthorized()`.
                 revert(0x1c, 0x04)
             }

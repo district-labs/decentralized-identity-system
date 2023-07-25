@@ -55,7 +55,7 @@ const config: HardhatUserConfig = {
         enabled: optimizerEnabled,
         runs: 200,
       },
-      evmVersion: 'istanbul',
+      evmVersion: 'london',
     },
   },
 };

@@ -4,7 +4,8 @@ import { Contract, ContractFactory } from 'ethers';
 import { ethers } from 'hardhat';
 
 const { provider } = ethers;
-const { getSigners, utils } = ethers;
+const { getSigners } = ethers;
+const ABI_CODER = new ethers.utils.AbiCoder
 
 describe.only('Wallet', () => {
   // Signers
@@ -16,29 +17,21 @@ describe.only('Wallet', () => {
   let WalletFactory: ContractFactory;
 
   // Constants
-  const URL = 'http://localhost:3000/{sender}';
+  const URL = 'http://localhost:3000/materialized/{sender}';
 
-  // DID
-  let DID: any;
-
-  const ABI_CODER = new ethers.utils.AbiCoder
+  // DID Document Object using Wallet0 address
+  let DID = {
+    '@context': 'https://www.w3.org/ns/did/v1',
+    id: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  }
 
   before(async () => {
     [wallet0, wallet1 ] = await getSigners();
     WalletFactory = await ethers.getContractFactory('Wallet');
-
-    DID = {
-      '@context': 'https://www.w3.org/ns/did/v1',
-      id: wallet0.address,
-    }
-    
-    const hash = utils.solidityKeccak256(["string"], [JSON.stringify(DID)])
-    const signature = await wallet0.signMessage(ethers.utils.arrayify(hash))
-    const recovered = utils.verifyMessage(hash, signature)
   });
 
   beforeEach(async () => {
-    Wallet = await WalletFactory.deploy(URL, [wallet0.address]);
+    Wallet = await WalletFactory.deploy(ethers.constants.AddressZero, URL, wallet0.address);
   });
 
   describe('function resolve() external view', () => {

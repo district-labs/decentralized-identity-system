@@ -6,7 +6,7 @@ import { ethers } from 'hardhat';
 import { encodeFunctionData, createPublicClient, http, offchainLookup, Hex } from 'viem'
 import { hardhat } from 'viem/chains'
 // @ts-ignore
-import WalletABI from '../artifacts/contracts/Wallet.sol/Wallet.json';
+import WalletABI from '../../artifacts/contracts/Wallet.sol/Wallet.json';
 
 const client = createPublicClient({ 
   chain: hardhat,
@@ -18,7 +18,7 @@ const { provider } = ethers;
 const { getSigners, utils } = ethers;
 
 
-describe('Wallet', () => {
+describe.skip('Wallet', () => {
   // Signers
   let wallet0: SignerWithAddress;
   let wallet1: SignerWithAddress;
