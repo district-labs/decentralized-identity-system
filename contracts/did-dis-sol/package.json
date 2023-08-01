@@ -1,7 +1,7 @@
 {
-  "name": "@turbo-lab/template-hardhat-sol",
+  "name": "@district-labs/did-dis-sol",
   "version": "0.0.0-beta.0",
-  "description": "Smart Contract Boilerplate using Hardhat",
+  "description": "Decentralized Identity System Smart Contracts",
   "main": "index.js",
   "license": "MIT",
   "scripts": {

@@ -1,9 +1,4 @@
-# Smart Contracts Boilerplate for Hardhat
-
-![Test](https://github.com/district-labs/did-pct-sol/actions/workflows/test.yml/badge.svg)
-![Coverage](https://github.com/district-labs/did-pct-sol/actions/workflows/coverage.yml/badge.svg)
-![TS](https://badgen.net/badge/-/TypeScript?icon=typescript&label&labelColor=blue&color=555555)
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](http://perso.crans.org/besson/LICENSE.html)
+# The `did:dis` Implementation
 
 # Installation
 
