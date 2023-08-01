@@ -4,14 +4,14 @@ The Decentralized Identity System DID (`did:dis`) standard, proposed by [Distric
 
 Decentralized Identity System Overview: https://hackmd.io/@kames/decentralized-identity-system
 
-**DISCLAIMER:** The `did:dis` standard is being actively developed. That being said the core idea has been validated, and are now focused on optimizations and minor architecture changes.
+**DISCLAIMER:** The `did:dis` standard is being actively developed. That being said the core approach has been validated, and we are now focused on optimizations and minor architecture changes.
 
 ## Introduction
 The proposed `did:dis` standard gives users a low-friction (and extremely low-cost) method for bootstrapping a blockchain based Smart Wallet, with built-in support for the W3C [decentralized identifier](https://www.w3.org/TR/did-core/) and [verifiable credential](https://www.w3.org/TR/vc-data-model/) standards.
 
 The `did:dis` standard relies on a combination of **counterfactual statements**, **offchain data storage** and **onchain public key infrastructure**.
 
-Giving people all over the world the ability to bootstrap a new decentralized identifier using only **2 private key signatures**, while maintaing the ability to progressively strengthen the security, as they reach new distributed systems commitment thresholds.
+Giving people all over the world the ability to bootstrap a new decentralized identifier using only **2 private key signatures**, while maintaining the ability to progressively strengthen the security, as they reach new distributed systems commitment thresholds.
 
 The proposed `did:dis` standard uses the following concepts, standards and technologies:
 
