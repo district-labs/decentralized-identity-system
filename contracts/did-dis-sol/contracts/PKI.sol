@@ -2,16 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {Wallet} from "./Wallet.sol";
-import {IEntryPoint} from "./interfaces/IEntryPoint.sol";
 import {IWalletFactory} from "./interfaces/IWalletFactory.sol";
 import {Create2} from "./utils/Create2.sol";
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 contract PKI is IWalletFactory {
     /*//////////////////////////////////////////////////////////////////////////
                                    PUBLIC STORAGE
     //////////////////////////////////////////////////////////////////////////*/
-    string public url;
+    string[] public urls;
 
     /*//////////////////////////////////////////////////////////////////////////
                                     ERROR EVENTS
@@ -21,8 +20,10 @@ contract PKI is IWalletFactory {
     /*//////////////////////////////////////////////////////////////////////////
                                     CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
-    constructor(string memory _url) {
-        url = _url;
+    constructor(string[] memory _urls) {
+        for (uint256 i = 0; i < _urls.length; i++) {
+            urls.push(_urls[i]);
+        }
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -37,7 +38,7 @@ contract PKI is IWalletFactory {
     {
         return Create2.computeAddress(
             bytes32(salt),
-            keccak256(abi.encodePacked(type(Wallet).creationCode, abi.encode(entryPoint, url, walletOwner)))
+            keccak256(abi.encodePacked(type(Wallet).creationCode, abi.encode(entryPoint, urls, walletOwner)))
         );
     }
 
@@ -47,37 +48,44 @@ contract PKI is IWalletFactory {
         return size > 0;
     }
 
-    function resolve(address entryPoint, address walletOwner, uint256 salt) external view {
+    function did(string calldata id) external view {
         bytes memory callData = abi.encodePacked(address(this));
-        string[] memory urls = new string[](1);
-        urls[0] = url;
+        address pki = _stringToAddress(id[11:53]);
+        address wallet = _stringToAddress(id[54:96]);
+        require(pki == address(this), "PKI: The DID document is not managed by this resolver");
         revert OffchainLookup(
             address(this),
             urls,
             callData,
-            this.constructDID.selector,
-            abi.encodePacked(entryPoint, walletOwner, salt)
+            this.document.selector,
+            abi.encodePacked(pki, wallet)
         );
     }
-
-    function constructDID(bytes calldata response, bytes calldata extraData) external view virtual returns (string memory did) {
-        // Parse the response
+    
+    function document(bytes calldata response, bytes calldata extraData) external view virtual returns (string memory DID) {
+        // Stateful Response from the `did` method
         bytes memory entryPoint = extraData[0:20];
-        bytes memory walletOwner = extraData[20:40];
-        bytes memory saltBytes = extraData[40:72];
-        bytes memory walletSiganture = response[0:65];
-        bytes memory didSiganture = response[65:130];
-        bytes memory didHex = response[130:];
+        bytes memory wallet = extraData[20:40];
+
+        // Reponse from Offchain Data Storage
+        bytes memory saltBytes = response[0:32];
+        bytes memory didSiganture = response[97:162];
+        bytes memory walletSignature = response[32:97];
+        bytes memory didHex = response[162:];
 
         // Hash the DID and the counterfactual Smart Wallet
         bytes32 didMsg = keccak256(abi.encodePacked(string(didHex)));
-        bytes32 walletMsg = keccak256(abi.encodePacked(entryPoint, walletOwner, saltBytes));
-
-        // Recover the signer of the DID
         address didSigner = _recoverSigner(didMsg, didSiganture);
+        
+        // Hash the entry point, the DID signer (counterfactual smart wallet owner) and the salt.
+        bytes32 walletMsg = keccak256(abi.encodePacked(entryPoint, didSigner, saltBytes));
 
         // Recover the signer of the counterfactual Smart Wallet
-        address walletSigner = _recoverSigner(walletMsg, walletSiganture);
+        address walletSigner = _recoverSigner(walletMsg, walletSignature);
+
+        // Check that the same signer signed both the DID and the counterfactual Smart Wallet
+        address walletComputed = computeAddress(_bytesToAddress(entryPoint), didSigner, _bytesToUint256(saltBytes));
+        require(walletComputed == _bytesToAddress(wallet), "INVALID WALLET ADDRESS");
 
         // Check that the signer of the Smart Wallet is the same as the signer of the DID
         require(walletSigner == didSigner, "INVALID SIGNATURE");
@@ -100,7 +108,9 @@ contract PKI is IWalletFactory {
             return Wallet(payable(walletAddress));
         } else {
             // Deploy the wallet
-            Wallet wallet = new Wallet{salt: bytes32(salt)}(entryPoint, url, walletOwner);
+            string[] memory __urls = new string[](1);
+            __urls[0] = urls[0];
+            Wallet wallet = new Wallet{salt: bytes32(salt)}(entryPoint, urls, walletOwner);
             return wallet;
         }
     }
@@ -108,6 +118,45 @@ contract PKI is IWalletFactory {
     /*//////////////////////////////////////////////////////////////////////////
                                     INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+    function _bytesToUint256(bytes memory data) internal pure returns (uint256 result) {
+        require(data.length >= 32, "Invalid data length");
+        assembly {
+            result := mload(add(data, 0x20))
+        }
+    }
+
+    function _stringToAddress(string memory _str) internal pure returns (address) {
+        bytes memory strBytes = bytes(_str);
+        require(strBytes.length == 42, "Invalid address length");
+
+        uint256 result = 0;
+        for (uint256 i = 0; i < 40; i++) {
+            uint256 charValue = uint256(uint8(strBytes[i + 2])); // Skip '0x' prefix
+            if (charValue >= 48 && charValue <= 57) {
+                charValue -= 48;
+            } else if (charValue >= 65 && charValue <= 70) {
+                charValue -= 55;
+            } else if (charValue >= 97 && charValue <= 102) {
+                charValue -= 87;
+            } else {
+                revert("Invalid character in address");
+            }
+            result = result * 16 + charValue;
+        }
+        return address(uint160(result));
+    }
+
+    function _bytesToAddress(bytes memory data) internal pure returns (address) {
+        require(data.length == 20, "Invalid data length"); // Ensure the data length is 20 bytes (address size)
+        
+        address addr;
+        assembly {
+            addr := mload(add(data, 20)) // Load 20 bytes (address size) starting from the data offset
+        }
+        
+        return addr;
+    }
 
     function _recoverSigner(bytes32 msgHash, bytes memory msgSignature) internal pure returns (address) {
         bytes32 r;

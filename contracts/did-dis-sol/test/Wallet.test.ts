@@ -22,7 +22,7 @@ describe.only('Wallet', () => {
   // DID Document Object using Wallet0 address
   let DID = {
     '@context': 'https://www.w3.org/ns/did/v1',
-    id: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    id: "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0xF50C7Ce266d8F43cAF73a3307636E36C23090A7d",
   }
 
   before(async () => {
@@ -31,14 +31,14 @@ describe.only('Wallet', () => {
   });
 
   beforeEach(async () => {
-    Wallet = await WalletFactory.deploy(ethers.constants.AddressZero, URL, wallet0.address);
+    Wallet = await WalletFactory.deploy(ethers.constants.AddressZero, [URL], wallet0.address);
   });
 
-  describe('function resolve() external view', () => {
+  describe('function did() external view', () => {
     it('should SUCCEED to revert and return CCIP compliant object', async () => {
       const data = await provider.call({
         to: Wallet.address,
-        data: "0x2810e1d6", // resolve()
+        data: Wallet.interface.encodeFunctionData('did', []),
         ccipReadEnabled: true,
       })
 

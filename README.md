@@ -1,10 +1,13 @@
 # Decentralized Identity System
 
-The Decentralized Identity System DID (`did:dis`) standard, proposed by [District Labs](http://districtlabs.com/) and [Disco](https://disco.xyz/), is a blockchain based DID (decentralized identifier) standard that balances ease-of-use with support for full life-cycle management.
+The Decentralized Identity System DID (`did:dis`) standard, proposed by [District Labs](http://districtlabs.com/) and [Disco](https://disco.xyz/), is a blockchain based DID (decentralized identifier) standard that embodies [progressive commitment threshold engineering principles](https://hackmd.io/@kames/progressive-commitment-thresholds).
 
-Giving users a low-friction (and oftentimes free) approach to bootstraping a blockchain based Smart Wallet, with built-in support for the W3C [decentralized identifier](https://www.w3.org/TR/did-core/) and [verifiable credential](https://www.w3.org/TR/vc-data-model/) standards.
+Decentralized Identity System Overview: https://hackmd.io/@kames/decentralized-identity-system
 
-<!-- ![](https://hackmd.io/_uploads/ByJ9CPbsn.jpg) -->
+**DISCLAIMER:** The `did:dis` standard is being actively developed. That being said the core idea has been validated, and are now focused on optimizations and minor architecture changes.
+
+## Introduction
+The proposed `did:dis` standard gives users a low-friction (and extremely low-cost) method for bootstrapping a blockchain based Smart Wallet, with built-in support for the W3C [decentralized identifier](https://www.w3.org/TR/did-core/) and [verifiable credential](https://www.w3.org/TR/vc-data-model/) standards.
 
 The `did:dis` standard relies on a combination of **counterfactual statements**, **offchain data storage** and **onchain public key infrastructure**.
 
@@ -19,3 +22,13 @@ The proposed `did:dis` standard uses the following concepts, standards and techn
 - Account Abstraction (EIP-4337 i.e. Smart Wallets)
 - Onchain Public Key Infrastructure
 - Intents, Authorization and Object Capabilities (Delegatable)
+
+
+## Contribute
+
+The Decentralized Identity System monorepo includes several implementation references:
+
+- Offchain Server
+- Onchain PKI & Wallet
+
+If you want to contribute, we recommend starting with the Onchain PKI & Wallet smart contracts.

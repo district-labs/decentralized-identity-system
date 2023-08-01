@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19;
+
 import "hardhat/console.sol";
+
 contract Wallet {
     
     error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData);
@@ -10,7 +12,7 @@ contract Wallet {
     /*//////////////////////////////////////////////////////////////////////////
                                    PUBLIC STORAGE
     //////////////////////////////////////////////////////////////////////////*/
-    string public url;
+    string[] public urls;
 
     address internal entry;
     
@@ -18,10 +20,12 @@ contract Wallet {
                                     CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
 
-    constructor(address _entry, string memory _url, address _owner) {
+    constructor(address _entry, string[] memory _urls, address _owner) {
         entry = _entry;
-        url = _url;
         owner[_owner] = true;
+        for (uint256 i = 0; i < _urls.length; i++) {
+            urls.push(_urls[i]);
+        }
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -36,20 +40,18 @@ contract Wallet {
         _call(dest, value, func);
     }
 
-    function resolve() external view {
+    function did() external view {
         bytes memory callData = abi.encodePacked(address(this));
-        string[] memory urls = new string[](1);
-        urls[0] = url;
         revert OffchainLookup(
             address(this),
             urls,
             callData,
-            this.constructDID.selector,
+            this.document.selector,
             abi.encodePacked(address(this))
         );
     }
 
-    function constructDID(bytes calldata response, bytes calldata) external view virtual returns (string memory did) {
+    function document(bytes calldata response, bytes calldata) external view virtual returns (string memory DID) {
         bytes memory msgSignature = bytes(response[0:65]);
         bytes memory didHex = bytes(response[65:]);
         bytes32 msgHash2 = keccak256(abi.encodePacked(string(didHex)));

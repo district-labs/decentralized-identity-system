@@ -1,4 +1,8 @@
-# Express TypeScript template
+# Decentralized Identity System Offchain Server Implementation
+
+The `did-dis-server` module is offchain server for storing user signed hashes and DID documents references.
+
+It's setup specifically to interoperate with the `did-dis-sol` module, which uses the [EIP-3668](https://eips.ethereum.org/EIPS/eip-3668) standard, so smart contracts can fetch offchain cryptographically verifiable data. 
 
 # Pre-reqs
 
