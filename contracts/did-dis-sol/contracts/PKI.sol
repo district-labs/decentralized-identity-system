@@ -11,16 +11,19 @@ contract PKI is IWalletFactory {
                                    PUBLIC STORAGE
     //////////////////////////////////////////////////////////////////////////*/
     string[] public urls;
+    address internal ENTRYPOINT;
 
     /*//////////////////////////////////////////////////////////////////////////
                                     ERROR EVENTS
     //////////////////////////////////////////////////////////////////////////*/
+    error InvalidOperation();
     error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData);
 
     /*//////////////////////////////////////////////////////////////////////////
                                     CONSTRUCTOR
     //////////////////////////////////////////////////////////////////////////*/
-    constructor(string[] memory _urls) {
+    constructor(address _entry, string[] memory _urls) {
+        ENTRYPOINT = _entry;
         for (uint256 i = 0; i < _urls.length; i++) {
             urls.push(_urls[i]);
         }
@@ -30,7 +33,13 @@ contract PKI is IWalletFactory {
                                     READ FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
 
-    function computeAddress(address entryPoint, address walletOwner, uint256 salt)
+    function isWallet(address target) external view returns (bool) {
+        uint256 size;
+        assembly { size := extcodesize(target) }
+        return size > 0;
+    }
+
+    function computeAddress(address walletOwner, uint256 salt)
         public
         view
         override
@@ -38,7 +47,7 @@ contract PKI is IWalletFactory {
     {
         return Create2.computeAddress(
             bytes32(salt),
-            keccak256(abi.encodePacked(type(Wallet).creationCode, abi.encode(entryPoint, urls, walletOwner)))
+            keccak256(abi.encodePacked(type(Wallet).creationCode, abi.encode(ENTRYPOINT, address(this), walletOwner, urls)))
         );
     }
 
@@ -49,22 +58,34 @@ contract PKI is IWalletFactory {
     }
 
     function did(string calldata id) external view {
-        bytes memory callData = abi.encodePacked(address(this));
         address pki = _stringToAddress(id[11:53]);
         address wallet = _stringToAddress(id[54:96]);
+        bytes memory callData = abi.encodePacked(wallet);
         require(pki == address(this), "PKI: The DID document is not managed by this resolver");
-        revert OffchainLookup(
-            address(this),
-            urls,
-            callData,
-            this.document.selector,
-            abi.encodePacked(pki, wallet)
-        );
+        if(!_isWallet(wallet)) {
+            revert OffchainLookup(
+                address(this),
+                urls,
+                callData,
+                this.document.selector,
+                abi.encodePacked(pki, wallet)
+            );
+        } else {
+            Wallet _wallet = Wallet(payable(wallet));
+            string[] memory __urls = _wallet.urls();
+            revert OffchainLookup(
+                address(this),
+                __urls,
+                callData,
+                this.resolve.selector,
+                abi.encodePacked(pki, wallet)
+            );
+        }
     }
     
     function document(bytes calldata response, bytes calldata extraData) external view virtual returns (string memory DID) {
         // Stateful Response from the `did` method
-        bytes memory entryPoint = extraData[0:20];
+        bytes memory pki = extraData[0:20];
         bytes memory wallet = extraData[20:40];
 
         // Reponse from Offchain Data Storage
@@ -78,13 +99,13 @@ contract PKI is IWalletFactory {
         address didSigner = _recoverSigner(didMsg, didSiganture);
         
         // Hash the entry point, the DID signer (counterfactual smart wallet owner) and the salt.
-        bytes32 walletMsg = keccak256(abi.encodePacked(entryPoint, didSigner, saltBytes));
+        bytes32 walletMsg = keccak256(abi.encodePacked(pki, didSigner, saltBytes));
 
         // Recover the signer of the counterfactual Smart Wallet
         address walletSigner = _recoverSigner(walletMsg, walletSignature);
 
         // Check that the same signer signed both the DID and the counterfactual Smart Wallet
-        address walletComputed = computeAddress(_bytesToAddress(entryPoint), didSigner, _bytesToUint256(saltBytes));
+        address walletComputed = computeAddress(didSigner, _bytesToUint256(saltBytes));
         require(walletComputed == _bytesToAddress(wallet), "INVALID WALLET ADDRESS");
 
         // Check that the signer of the Smart Wallet is the same as the signer of the DID
@@ -92,15 +113,31 @@ contract PKI is IWalletFactory {
         return string(didHex);
     }
 
+    function resolve(bytes calldata response, bytes calldata extraData) external view virtual returns (string memory DID) {
+        // Stateful Response from the `did` method
+        bytes memory pki = extraData[0:20];
+        bytes memory wallet = extraData[20:40];
+
+        // Reponse from Offchain Data Storage
+        bytes memory msgSignature = bytes(response[0:65]);
+        bytes memory didHex = bytes(response[65:]);
+        bytes32 msgHash2 = keccak256(abi.encodePacked(string(didHex)));
+        address signer = _recoverSigner(msgHash2, msgSignature);
+
+        Wallet _wallet = Wallet(payable(_bytesToAddress(wallet)));
+        require(_wallet.isOwner(signer), "INVALID SIGNATURE");
+        return string(didHex);
+    }
+
     /*//////////////////////////////////////////////////////////////////////////
                                     WRITE FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
-    function deployWallet(address entryPoint, address walletOwner, uint256 salt)
+    function deployWallet(address walletOwner, uint256 salt)
         external
         override
         returns (Wallet)
     {
-        address walletAddress = computeAddress(entryPoint, walletOwner, salt);
+        address walletAddress = computeAddress(walletOwner, salt);
 
         // Determine if a wallet is already deployed at this address, if so return that
         uint256 codeSize = walletAddress.code.length;
@@ -108,9 +145,9 @@ contract PKI is IWalletFactory {
             return Wallet(payable(walletAddress));
         } else {
             // Deploy the wallet
-            string[] memory __urls = new string[](1);
-            __urls[0] = urls[0];
-            Wallet wallet = new Wallet{salt: bytes32(salt)}(entryPoint, urls, walletOwner);
+            // string[] memory __urls = new string[](1);
+            // __urls[0] = urls[0];
+            Wallet wallet = new Wallet{salt: bytes32(salt)}(ENTRYPOINT, address(this), walletOwner, urls);
             return wallet;
         }
     }
@@ -118,6 +155,12 @@ contract PKI is IWalletFactory {
     /*//////////////////////////////////////////////////////////////////////////
                                     INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////////////////////////*/
+
+    function _isWallet(address target) internal view returns (bool) {
+        uint256 size;
+        assembly { size := extcodesize(target) }
+        return size > 0;
+    }
 
     function _bytesToUint256(bytes memory data) internal pure returns (uint256 result) {
         require(data.length >= 32, "Invalid data length");

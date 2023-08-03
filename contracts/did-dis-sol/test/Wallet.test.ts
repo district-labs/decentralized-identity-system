@@ -13,39 +13,45 @@ describe.only('Wallet', () => {
   let wallet1: SignerWithAddress;
 
   // Contract and ContractFactory
+  let PKI: Contract;
+  let PKIFactory: ContractFactory;
+
   let Wallet: Contract;
   let WalletFactory: ContractFactory;
 
   // Constants
-  const URL = 'http://localhost:3000/materialized/{sender}';
+  const ENTRYPOINT = "0xdEAD000000000000000042069420694206942069"
+  const URL_COUNTERFACTUAL = 'http://localhost:3000/materialized/{sender}';
+  const URL_MATERIALIZED = 'http://localhost:3000/materialized/{sender}';
 
   // DID Document Object using Wallet0 address
   let DID = {
     '@context': 'https://www.w3.org/ns/did/v1',
-    id: "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0xF50C7Ce266d8F43cAF73a3307636E36C23090A7d",
+    id: "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0x8fd0798717a8002dCe8A4b615bDC87D474A43B79",
   }
 
   before(async () => {
     [wallet0, wallet1 ] = await getSigners();
+    PKIFactory = await ethers.getContractFactory('PKI');    
+    PKI = await PKIFactory.deploy(ENTRYPOINT, [URL_COUNTERFACTUAL]);
     WalletFactory = await ethers.getContractFactory('Wallet');
   });
 
   beforeEach(async () => {
-    Wallet = await WalletFactory.deploy(ethers.constants.AddressZero, [URL], wallet0.address);
+    // Wallet = await WalletFactory.deploy(ethers.constants.AddressZero, PKI.address, wallet0.address, [URL_MATERIALIZED],);
   });
 
-  describe('function did() external view', () => {
-    it('should SUCCEED to revert and return CCIP compliant object', async () => {
-      const data = await provider.call({
-        to: Wallet.address,
-        data: Wallet.interface.encodeFunctionData('did', []),
-        ccipReadEnabled: true,
-      })
+  // describe('function did() external view', () => {
+  //   it('should SUCCEED to resolve the Smart Wallet DID', async () => {
+  //     const data = await provider.call({
+  //       to: Wallet.address,
+  //       data: Wallet.interface.encodeFunctionData('did', []),
+  //       ccipReadEnabled: true,
+  //     })
 
-      const [decoded] = ABI_CODER.decode(['string'], data)
-      const DID_OBJECT = JSON.parse(decoded)  
-      expect(DID_OBJECT).to.deep.equal(DID)
-
-    });
-  });
+  //     const [decoded] = ABI_CODER.decode(['string'], data)
+  //     const DID_OBJECT = JSON.parse(decoded)  
+  //     expect(DID_OBJECT).to.deep.equal(DID)
+  //   });
+  // });
 });

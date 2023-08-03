@@ -1,7 +1,7 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { Contract, ContractFactory } from 'ethers';
-import { ethers } from 'hardhat';
+import { BigNumber, Contract, ContractFactory } from 'ethers';
+import hre, { ethers } from 'hardhat';
 
 const { provider } = ethers;
 const { getSigners } = ethers;
@@ -17,10 +17,15 @@ describe.only('PublicKeyInfrastructure', () => {
   let PKIFactory: ContractFactory;
 
   // Constants
-  const URL = 'http://localhost:3000/counterfactual/{sender}';
+  const ENTRYPOINT = "0xdEAD000000000000000042069420694206942069"
+  const SALT_ONE = 1;
+  const SALT_TWO = 2;
+  const SALT_THREE = 3;
+  const URL_COUNTERFACTUAL = 'http://localhost:3000/counterfactual/{sender}/{data}';
+  const URL_MATERIALIZED = 'http://localhost:3000/materialized/{sender}/{data}';
   
   // DID Document Object
-  const DID_ID = "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0xF50C7Ce266d8F43cAF73a3307636E36C23090A7d"
+  const DID_ID = "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0x8fd0798717a8002dCe8A4b615bDC87D474A43B79"
   const DID = {
    '@context': 'https://www.w3.org/ns/did/v1',
    id: DID_ID
@@ -28,22 +33,30 @@ describe.only('PublicKeyInfrastructure', () => {
   before(async () => {
     [wallet0, wallet1 ] = await getSigners();
     PKIFactory = await ethers.getContractFactory('PKI');    
-    PKI = await PKIFactory.deploy([URL]);
+    PKI = await PKIFactory.deploy(ENTRYPOINT, [URL_COUNTERFACTUAL]);
     
     /** 
-     * HACK WAY TO GENERATE INPUTS for the DID document 
-     * Uncomment the lines below to get the values needed for the `did-dis-server` module.
+     * HACKY WAY TO GENERATE DATA for Identity Hub test server
+     * Uncomment the lines below to get the values needed for the `identity-hub-test-server` module.
      */
+
     // const did_hash = ethers.utils.solidityKeccak256(["string"], [JSON.stringify(DID)])
     // const did_signature = await wallet0.signMessage(ethers.utils.arrayify(did_hash))
-    // const walletSignature = await wallet0.signMessage(ethers.utils.arrayify(ethers.utils.solidityKeccak256(["address", "address", "uint256"], [PKI.address, wallet0.address, BigNumber.from("1")])));
+    // const walletSignature = await wallet0.signMessage(ethers.utils.arrayify(ethers.utils.solidityKeccak256(["address", "address", "uint256"], [PKI.address, wallet0.address, SALT_ONE])));
+    // const walletAddress = await PKI.computeAddress(wallet0.address, SALT_ONE);
     // console.log(PKI.address, 'PKI.address')
     // console.log(did_signature, 'did_signature')
     // console.log(walletSignature, 'walletSignature')
+    // console.log(walletAddress, 'address')
+  });
+
+  beforeEach(async () => {
+    // await hre.network.provider.send("hardhat_reset")
   });
 
   describe('function did(string calldata id) external view', () => {
-    it('should SUCCEED to resolve a did:dis DID document', async () => {
+
+    it('should SUCCEED to resolve a DID document via a counterfactual Smart Wallet', async () => {
       const data = await provider.call({
         to: PKI.address,
         data: PKI.interface.encodeFunctionData('did', [DID_ID]),
@@ -53,21 +66,46 @@ describe.only('PublicKeyInfrastructure', () => {
       const DID_OBJECT = JSON.parse(decoded)  
       expect(DID_OBJECT).to.deep.equal(DID)
     });
+    
+    it('should SUCCEED to resolve a DID document via a materialized Smart Wallet', async () => {
+      const address = await PKI.computeAddress(wallet0.address, SALT_ONE);
+      await PKI.deployWallet(wallet0.address, SALT_ONE);
+
+      const wallet = (await ethers.getContractAt('Wallet', address)).connect(wallet0);
+
+      await wallet.setUrls([URL_MATERIALIZED]);
+
+      const data = await provider.call({
+        to: PKI.address,
+        data: PKI.interface.encodeFunctionData('did', [DID_ID]),
+        ccipReadEnabled: true,
+      })
+
+      const [decoded] = ABI_CODER.decode(['string'], data)
+      const DID_OBJECT = JSON.parse(decoded)  
+      expect(DID_OBJECT).to.deep.equal(DID)
+    });
+
   });
 
   describe('computeAddress(address entryPoint, address walletOwner, uint256 salt)', () => {
     it('should SUCCEED to get compute a future Smart Wallet address', async () => {
-      const address = await PKI.computeAddress(PKI.address, wallet0.address, 1);
-      expect(address).to.equal('0xF50C7Ce266d8F43cAF73a3307636E36C23090A7d');
+      const address = await PKI.computeAddress(wallet0.address, SALT_ONE);
+      expect(address).to.equal('0x8fd0798717a8002dCe8A4b615bDC87D474A43B79');
     });
   });
   
   describe('deployWallet(address entryPoint, address walletOwner, uint256 salt)', () => {
-    it('should SUCCEED to get deploy a future Smart Wallet address matching the computed address', async () => {
-      await PKI.deployWallet(PKI.address, wallet0.address, 1);
-      const address = await PKI.computeAddress(PKI.address, wallet0.address, 1);
-      const exists = await PKI.walletExists(address);
-      expect(exists).to.equal(true);
+    it('should SUCCEED to get a future Smart Wallet address matching the computed address', async () => {
+      const address = await PKI.computeAddress(wallet0.address, SALT_THREE);
+
+      const counterfactual = await PKI.isWallet(address);
+      await PKI.deployWallet(wallet0.address, SALT_THREE);
+      const materialized = await PKI.isWallet(address);
+
+      expect(counterfactual).to.equal(false);
+      expect(materialized).to.equal(true);
     });
   });
+  
 });
