@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19;
 
-import "hardhat/console.sol";
-
 contract Wallet {
     
     error OffchainLookup(address sender, string[] urls, bytes callData, bytes4 callbackFunction, bytes extraData);
@@ -62,18 +60,19 @@ contract Wallet {
     }
 
     function document(bytes calldata response, bytes calldata) external view virtual returns (string memory DID) {
-        console.log("DOCUMENT");
         bytes memory msgSignature = bytes(response[0:65]);
         bytes memory didHex = bytes(response[65:]);
         bytes32 msgHash2 = keccak256(abi.encodePacked(string(didHex)));
         address signer = _recoverSigner(msgHash2, msgSignature);
-        // require(owner[signer], "INVALID SIGNATURE");
+        require(owner[signer], "INVALID SIGNATURE");
         return string(didHex);
     }
 
-    function setUrls(string[] memory __urls) external {
-        // _isOwnerOrEntryPoint();
+    function setEntry(address _entry) external {
+        ENTRYPOINT = _entry;
+    }
 
+    function setUrls(string[] memory __urls) external {
         // Clear existing URLs
         for (uint256 i = 0; i < _urls.length; i++) {
             delete _urls[i];

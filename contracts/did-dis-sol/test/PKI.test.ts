@@ -25,7 +25,7 @@ describe.only('PublicKeyInfrastructure', () => {
   const URL_MATERIALIZED = 'http://localhost:3000/materialized/{sender}/{data}';
   
   // DID Document Object
-  const DID_ID = "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0x8fd0798717a8002dCe8A4b615bDC87D474A43B79"
+  const DID_ID = "did:dis:10:0x5FbDB2315678afecb367f032d93F642f64180aa3:0x0cFd869c63b828C28b758A7a96B15E62Be013a22"
   const DID = {
    '@context': 'https://www.w3.org/ns/did/v1',
    id: DID_ID
@@ -91,7 +91,7 @@ describe.only('PublicKeyInfrastructure', () => {
   describe('computeAddress(address entryPoint, address walletOwner, uint256 salt)', () => {
     it('should SUCCEED to get compute a future Smart Wallet address', async () => {
       const address = await PKI.computeAddress(wallet0.address, SALT_ONE);
-      expect(address).to.equal('0x8fd0798717a8002dCe8A4b615bDC87D474A43B79');
+      expect(address).to.equal('0x0cFd869c63b828C28b758A7a96B15E62Be013a22');
     });
   });
   

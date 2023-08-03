@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+// import "hardhat/console.sol";
 import {Wallet} from "./Wallet.sol";
 import {IWalletFactory} from "./interfaces/IWalletFactory.sol";
 import {Create2} from "./utils/Create2.sol";
-import "hardhat/console.sol";
 
 contract PKI is IWalletFactory {
     /*//////////////////////////////////////////////////////////////////////////
