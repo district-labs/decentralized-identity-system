@@ -4,7 +4,7 @@ The Decentralized Identity System DID (`did:dis`) standard, proposed by [Distric
 
 Decentralized Identity System Overview: https://hackmd.io/@kames/decentralized-identity-system
 
-**DISCLAIMER:** The `did:dis` standard is being actively developed. That being said the core approach has been validated, and we are now focused on optimizations and minor architecture changes.
+**DISCLAIMER:** **Smart Wallet (Account Abstraction) features are missing from the current implementation .** For simplicities sake an existing EIP-4337 implementation will be forked and the DID standard will be integrated when the time is right.
 
 ## Introduction
 The proposed `did:dis` standard gives users a low-friction (and extremely low-cost) method for bootstrapping a blockchain based Smart Wallet, with built-in support for the W3C [decentralized identifier](https://www.w3.org/TR/did-core/) and [verifiable credential](https://www.w3.org/TR/vc-data-model/) standards.
@@ -23,12 +23,11 @@ The proposed `did:dis` standard uses the following concepts, standards and techn
 - Onchain Public Key Infrastructure
 - Intents, Authorization and Object Capabilities (Delegatable)
 
-
 ## Contribute
 
 The Decentralized Identity System monorepo includes several implementation references:
 
-- Offchain Server
-- Onchain PKI & Wallet
+- Offchain Identity Hub
+- Onchain Public Key Infrastructure & Smart Wallet
 
-If you want to contribute, we recommend starting with the Onchain PKI & Wallet smart contracts.
+If you want to contribute, we recommend reviewing the PKI & Wallet smart contracts.

@@ -2,9 +2,8 @@
 
 The `did-dis-sol` module contains the public key infrastructure (PKI) and Smart Wallet smart contract reference implementations.
 
-**DISCLAIMER:** DO NOT USE THESE IN PRODUCTION. The smart contract are meant to demonstrate the core concept: providing basic functionality and essential unit tests.
 
-Over the coming months we will develop the production ready smart contracts --  hang tight -- we're getting ready for lift-off!
+**DISCLAIMER:** **Smart Wallet (Account Abstraction) features are missing from the current implementation .** For simplicities sake an existing EIP-4337 implementation will be forked and the DID standard will be integrated when the time is right.
 
 # Installation
 
