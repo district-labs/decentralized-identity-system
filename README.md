@@ -1,5 +1,14 @@
 # Decentralized Identity System
 
+## ARCHIVED - Repo changed locations
+
+The codebase has been archived and move to a new Github organization.
+
+https://github.com/decentralized-identity-system
+
+Please reference that codebase for the must up-to-date improvements.
+
+## Overview
 The Decentralized Identity System DID (`did:dis`) standard, proposed by [District Labs](http://districtlabs.com/) and [Disco](https://disco.xyz/), is a blockchain based DID (decentralized identifier) standard that embodies [progressive commitment threshold engineering principles](https://hackmd.io/@kames/progressive-commitment-thresholds).
 
 Decentralized Identity System Overview: https://hackmd.io/@kames/decentralized-identity-system
